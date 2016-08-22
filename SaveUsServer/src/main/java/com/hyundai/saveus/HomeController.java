@@ -2,11 +2,15 @@ package com.hyundai.saveus;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -21,6 +25,11 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.multipart.commons.CommonsMultipartFile;
 
+import com.google.android.gcm.server.Message;
+import com.google.android.gcm.server.MulticastResult;
+import com.google.android.gcm.server.Result;
+import com.google.android.gcm.server.Sender;
+
 /**
  * Handles requests for the application home page.
  */
@@ -31,16 +40,16 @@ public class HomeController {
 	private static final Logger logger = LoggerFactory.getLogger(HomeController.class);
 
 	@RequestMapping(value = "/insert.do", method = RequestMethod.POST)
-	public String insert(MultipartHttpServletRequest request, ModelMap model)
+	public String insert(HttpServletRequest request2,MultipartHttpServletRequest request, ModelMap model)
 			throws IllegalStateException, IOException {
 		System.out.println("들어옴");
 		Map<String, MultipartFile> files = request.getFileMap();
 		CommonsMultipartFile cmf = (CommonsMultipartFile) files.get("photo");
 		// 경로
-		String s = System.getProperty("user.dir");
-		System.out.println("경로 : " + s);
-		String savePath = "C:\\"+cmf.getOriginalFilename();
-		
+		String pdfPath = request.getSession().getServletContext().getRealPath("/resources");
+		System.out.println("pdf : " + pdfPath);
+		String savePath = ""+pdfPath+"/common/img/"+cmf.getOriginalFilename();
+		System.out.println("저장 경로 : " +savePath);
 
 		File file = new File(savePath);
 		// 파일 업로드 처리 완료.
@@ -52,6 +61,7 @@ public class HomeController {
 		} catch (Exception e) {
 			model.addAttribute("result", "업로드 실패");
 		}
+		sendPush();
 		return "fileupload";
 	}
 
@@ -78,45 +88,29 @@ public class HomeController {
 		return "home";
 	}
 
-	@RequestMapping(value = "/json.do")
-	public void selectUser(HttpServletRequest request) throws Exception {
-		MultipartHttpServletRequest multipartHttpServletRequest = (MultipartHttpServletRequest) request;
-		Iterator<String> iterator = multipartHttpServletRequest.getFileNames();
-		MultipartFile multipartFile = null;
-		while (iterator.hasNext()) {
-			multipartFile = multipartHttpServletRequest.getFile(iterator.next());
-			if (multipartFile.isEmpty() == false) {
-				System.out.println("------------- file start -------------");
-				System.out.println("name : " + multipartFile.getName());
-
-				System.out.println("filename : " + multipartFile.getOriginalFilename());
-				System.out.println("size : " + multipartFile.getSize());
-				System.out.println("-------------- file end --------------\n");
-			}
-		}
+	@RequestMapping(value = "/push.do")
+	public void msgSend(HttpServletRequest request) throws Exception {
+		sendPush();
 	}
 	
-	public void letterPush(String letter_id, String to_id, String to_name, String from_id, String from_name,
-			String address, String latitude, String longitude, String content, String date, String register_id) {
-		String msg = "새로운 편지가 도착했습니다!";
+	public void sendPush() {
+		String msg = "움직임 포착!!";
+		String register_id="APA91bGGbLhsjufEDdz90wulEfrb6AQGvanOqHzzRyp8q8gbgRt0-N2Ju48RGorQv3H5GB-WcAeUKd4-tuujRsp7LgANzoM59etxz6tJv7Lj0WqUmbDDU_7r5MEy3tP1pIzTTg1UQZ9s";
 		try {
-			to_name = URLEncoder.encode(to_name, "euc-kr");
-			from_name = URLEncoder.encode(from_name, "euc-kr");
-			address = URLEncoder.encode(address, "euc-kr");
-			content = URLEncoder.encode(content, "euc-kr");
+			
 			msg = URLEncoder.encode(msg, "euc-kr");
 		} catch (UnsupportedEncodingException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-		String simpleApiKey = "AIzaSyDQ8J1e2CqzeGQ0y9sSMmlWyjM0ugk74P0";
+		String simpleApiKey = "AIzaSyBcjjjjShUZgjaLk2aq2Cbc4oqE_nWMiFw";
 		ArrayList<String> regid = new ArrayList<String>(); // reg_id
 
 		String MESSAGE_ID = String.valueOf(Math.random() % 100 + 1);
 
 		boolean SHOW_ON_IDLE = false;
 
-		int LIVE_TIME = 1; 
+		int LIVE_TIME = 1 ; 
 
 		int RETRY = 2;
 		regid.add(register_id);
@@ -127,10 +121,7 @@ public class HomeController {
 
 				.delayWhileIdle(SHOW_ON_IDLE)
 
-				.timeToLive(LIVE_TIME).addData("letter_id", letter_id).addData("msg", msg)
-				.addData("to_id", to_id).addData("to_name", to_name).addData("from_id", from_id)
-				.addData("from_name", from_name).addData("address", address).addData("latitude", latitude)
-				.addData("longitude", longitude).addData("content", content).addData("date", date)
+				.timeToLive(LIVE_TIME).addData("msg", msg)
 
 				.build();
 
