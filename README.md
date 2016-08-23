@@ -5,6 +5,7 @@
 * Raspbian 4.4 
 * Android Studio
 * Spring Framework 4.0
+* Tomcat8.0
 * Maven
 * JDK8.0
 * Amazon Web Service
