@@ -10,9 +10,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +26,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.multipart.commons.CommonsMultipartFile;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 import com.google.android.gcm.server.Message;
 import com.google.android.gcm.server.MulticastResult;
@@ -42,7 +48,7 @@ public class HomeController {
 	@RequestMapping(value = "/insert.do", method = RequestMethod.POST)
 	public String insert(HttpServletRequest request2,MultipartHttpServletRequest request, ModelMap model)
 			throws IllegalStateException, IOException {
-		System.out.println("들어옴");
+		String address  = request.getParameter("address");
 		Map<String, MultipartFile> files = request.getFileMap();
 		CommonsMultipartFile cmf = (CommonsMultipartFile) files.get("photo");
 		// 경로
@@ -61,7 +67,8 @@ public class HomeController {
 		} catch (Exception e) {
 			model.addAttribute("result", "업로드 실패");
 		}
-		sendPush();
+		
+		
 		return "fileupload";
 	}
 
@@ -81,24 +88,65 @@ public class HomeController {
 
 	@RequestMapping(value = "/receiver.do")
 	public String test(HttpServletRequest request, Model model) throws Exception {
+		request.setCharacterEncoding("utf-8");
 		String id = request.getParameter("id");
+		URLEncoder.encode(id, "euc-kr");
 		String passwd = request.getParameter("pw");
 		System.out.println("id : " + id + " pwd : " + passwd);
 		model.addAttribute("id", id);
 		return "home";
 	}
-
-	@RequestMapping(value = "/push.do")
-	public void msgSend(HttpServletRequest request) throws Exception {
-		sendPush();
+	void parseXml(String address) {
+		
+	}
+	@RequestMapping(value = "/dataInsert.do")
+	public void test(HttpServletRequest request, HttpServletResponse response, Model model) throws Exception {
+		request.setCharacterEncoding("utf-8");
+		String address = request.getParameter("address");
+		String address_arr = "";
+		String tel_arr = "";
+		try {
+			Document document =DocumentBuilderFactory.newInstance().newDocumentBuilder().parse("http://openapi.seoul.go.kr:8088/43546a415776697334324a6d5a4847/xml/SebcPoliceStationKor/1/1000");
+			Element root = document.getDocumentElement();
+			NodeList address_list = root.getElementsByTagName("ADD_KOR_ROAD");
+			NodeList n_list = root.getElementsByTagName("H_KOR_GU");
+			NodeList tel = root.getElementsByTagName("TEL");
+			
+			for (int i = 0; i < n_list.getLength(); i++) {
+				if (n_list.item(i).getFirstChild().getTextContent().equals(address)) {
+					address_arr += address_list.item(i).getFirstChild().getTextContent() + "/";
+					tel_arr += tel.item(i).getFirstChild().getTextContent() + "/";
+				}
+			}
+			
+		} catch (SAXException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ParserConfigurationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.out.println(address_arr +" /  " + tel_arr);
+		sendPush(address_arr, tel_arr);
+		
 	}
 	
-	public void sendPush() {
+	@RequestMapping(value = "/push.do")
+	public void msgSend(HttpServletRequest request) throws Exception {
+//		sendPush();
+	}
+	
+	public void sendPush(String address, String tel) {
 		String msg = "움직임 포착!!";
 		String register_id="APA91bGGbLhsjufEDdz90wulEfrb6AQGvanOqHzzRyp8q8gbgRt0-N2Ju48RGorQv3H5GB-WcAeUKd4-tuujRsp7LgANzoM59etxz6tJv7Lj0WqUmbDDU_7r5MEy3tP1pIzTTg1UQZ9s";
 		try {
 			
 			msg = URLEncoder.encode(msg, "euc-kr");
+			address = URLEncoder.encode(address, "euc-kr");
+			tel = URLEncoder.encode(tel, "euc-kr");
 		} catch (UnsupportedEncodingException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -121,7 +169,7 @@ public class HomeController {
 
 				.delayWhileIdle(SHOW_ON_IDLE)
 
-				.timeToLive(LIVE_TIME).addData("msg", msg)
+				.timeToLive(LIVE_TIME).addData("msg", msg).addData("address", address).addData("tel", tel)
 
 				.build();
 
