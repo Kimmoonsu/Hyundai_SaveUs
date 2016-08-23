@@ -16,8 +16,8 @@
 * 차량이 주차된 근처에 경찰서를 찾아주어 연락을 가능하게 해줍니다.
 
 
-[![차랑내부 감지 시스템](http://img.youtube.com/vi/g6DI1Go8mjY/0.jpg)](https://youtu.be/g6DI1Go8mjY)
-[시연동영상 바로가기](https://youtu.be/g6DI1Go8mjY)
+[![차랑내부 감지 시스템](http://img.youtube.com/vi/2zsidRNUQXA/0.jpg)](https://youtu.be/2zsidRNUQXA)
+[시연동영상 바로가기](https://youtu.be/2zsidRNUQXA)
 
 
 ## 차량에 아이, 애완동물 방치 관련 기사
