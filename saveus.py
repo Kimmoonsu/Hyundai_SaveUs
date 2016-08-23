@@ -11,24 +11,19 @@ import pandas as pd
 import cv2
 import os
 
-
 gpio.setmode(gpio.BCM)
-
 trig = 18
 echo = 15
-
-cpature_flag = 0
-
-MAX_COUNT = 2
-flag = 0
-
 gpio.setup(trig, gpio.OUT)
 gpio.setup(echo, gpio.IN)
+address = ''
+temperature = 0
 
 def handle_time():
+
     try:
         while True:
-            time_list = pd.read_csv("05712c7b058474e8f0e652e7256d781d/20160116T113533.log.csv")
+            time_list = pd.read_csv("05712c7b058474e8f0e652e7256d781d/20160419T154644.log.csv")
             time_list.shape
             time_list
 
@@ -57,16 +52,35 @@ def handle_time():
             time_minit = (time_second_total - time_hour*60*60)/60
             time_second = time_second_total - time_minit*60 - time_hour*60*60
 
-            print "empty car durin" + str(time_hour) + ":" + str(time_minit) + ":" + str(time_second)
-            if int(time_second_total) > 60
-                print time_second_total
-            
-            
+            print "empty car during" + str(time_hour) + ":" + str(time_minit) + ":" + str(time_second)
 
-    except(ValueError, IOError) as err :
-        print(err)
+            if time_second_total > 300 or time_second_total < 300:
+                print time_second_total
+                return
+            
+    except KeyboardInterrupt :
+        print "False"
         gpio.cleanup()
-        
+
+def handle_address():
+    global address
+    
+    time_list = pd.read_csv("05712c7b058474e8f0e652e7256d781d/20160419T154644.log.csv")
+    time_list.shape
+    time_list
+
+    address_list = []
+    for t in time_list.iterrows() :
+        address_list.append(t[1]['c_15'])
+
+    arr = len(address_list) - 10
+    address = address_list[arr]
+    while address == 'nan':
+        arr = int(arr)-1
+        addresss = address_list[int(arr)]
+
+    if address == '북구' or address == '동구':
+        address = '서초구'
 
 def handle_video():
     os.system('sudo modprobe bcm2835-v4l2')
@@ -80,15 +94,34 @@ def handle_video():
         
     cv2.imwrite('detect_img.png', frame)
     print "Capture Picam"
-    files = {'photo' : open('/home/pi/workspace/detect_img.png', 'rb')}
-    requests.post("http://52.78.88.51:8080/SaveUsServer/insert.do", files=files)
-    print "Send image"
     
     cap.release()
     cv2.destroyAllWindows()
 
+def post():
+
+    files = {'photo' : open('/home/pi/workspace/detect_img.png', 'rb')}
+    requests.post("http://52.78.88.51:8080/SaveUsServer/insert.do", files=files)
+    print "\nSend image"
+
+def post2() :
+    global address 
+    params = urllib.urlencode( {'address' : address })
+    
+    headers = {"Content-type" :"application/x-www-form-urlencoded"}
+    conn = httplib.HTTPConnection("52.78.88.51:8080")
+    conn.request("POST", "/SaveUsServer/dataInsert.do", params, headers)
+    response = conn.getresponse()
+    data = response.read()
+    print data
+    print address
+    conn.close()
+
 def handle_ultra():
-    count = 0
+    
+    MAX_COUNT = 2
+    
+    count = 0    
     distance_com = 0
     try :
         while True :
@@ -119,14 +152,15 @@ def handle_ultra():
             else :
                 break
 
-            if distance_dif > 10 or distance_dif < -10:
-                print "Catch move front@@@@@@@@@@@@@@@@@@@"
+            if distance_dif > 5 or distance_dif < -5:
                 count += 1
-                if count == 2 :
+                print count
+                if count == MAX_COUNT :                            
                     handle_video()
+                    
 
-    except(ValueError, IOError) as err :
-        print(err)
+    except KeyboardInterrupt :
+        print "False"
         gpio.cleanup()
     
 
@@ -134,19 +168,9 @@ def handle_ultra():
 if __name__ == '__main__':
     handle_time()
     handle_ultra()
-        
-
-
-
-
-
-
-
-
-
-
-
-
+    handle_address()
+    post()
+    post2()
 
 
 
