@@ -18,3 +18,9 @@
 
 [![차랑내부 감지 시스템](http://img.youtube.com/vi/g6DI1Go8mjY/0.jpg)](https://youtu.be/g6DI1Go8mjY)
 [시연동영상 바로가기](https://youtu.be/g6DI1Go8mjY)
+
+
+## 차량에 아이, 애완동물 방치 관련 기사
+[![차랑내부 감지 시스템](http://www.yonhapnews.co.kr/bulletin/2016/07/30/0200000000AKR20160730026752054.HTML)]
+
+http://www.isstime.co.kr/view/?nid=20150910154425664255
